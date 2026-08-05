@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Dark-mode-only palette, mirrored from the Expo app's src/theme/colors.ts so both apps
+   share one visual identity. Tailwind v4's CSS-based @theme turns each var into a utility
+   (bg-background, text-text-primary, border-border, text-protein, etc.) */
+@theme {
+  --color-background: #0b0b0f;
+  --color-surface: #16161d;
+  --color-surface-elevated: #1f1f29;
+  --color-border: #2a2a36;
+
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: #9a9aa7;
+  --color-text-muted: #5c5c6a;
+
+  --color-accent: #ff5a3c;
+  --color-accent-muted: #3d211c;
+
+  --color-protein: #4ade80;
+  --color-carbs: #60a5fa;
+  --color-fat: #fbbf24;
+
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #3d2a1c;
+  --color-danger: #f87171;
+
+  --color-sleep: #a78bfa;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none; /* stop iOS Safari's rubber-band pull-to-refresh inside the app shell */
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+/* iOS Safari zooms the page if a focused input's font-size is under 16px — this keeps every
+   text input safely above that threshold regardless of the Tailwind text-size utility used. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
