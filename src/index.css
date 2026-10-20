@@ -31,16 +31,25 @@
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
 
+/* Fixed, non-scrolling html/body — every screen manages its own overflow-y-auto region
+   internally (see App.tsx), so the outer document never rubber-bands or scrolls as a whole. */
 html {
   color-scheme: dark;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none; /* stop iOS Safari's rubber-band pull-to-refresh inside the app shell */
 }
 

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { UndoToast } from "@/components/ui/UndoToast";
 import {
   createWorkout,
   deleteWorkout,
   getExerciseLogsForWorkout,
   getPreviousBestForExercise,
   getWorkoutsForDate,
+  restoreWorkout,
 } from "@/lib/api";
 import { dayKey, formatDuration } from "@/lib/dateHelpers";
 import type { ExerciseLogRow, WorkoutRow, WorkoutType } from "@/types/database";
@@ -54,6 +56,7 @@ export function Workouts() {
   const [todaysWorkouts, setTodaysWorkouts] = useState<WorkoutRow[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, ExerciseLogRow[]>>({});
   const [overloadResults, setOverloadResults] = useState<OverloadResult[] | null>(null);
+  const [undoWorkout, setUndoWorkout] = useState<{ workout: WorkoutRow; exerciseLogs: ExerciseLogRow[] } | null>(null);
 
   const isStrength = STRENGTH_TYPES.includes(workoutType);
 
@@ -148,14 +151,28 @@ export function Workouts() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this workout? This can't be undone.")) return;
+  const handleDelete = async (workout: WorkoutRow) => {
     try {
-      await deleteWorkout(id);
+      const logs = exerciseLogs[workout.id] ?? [];
+      await deleteWorkout(workout.id);
       loadToday();
+      setUndoWorkout({ workout, exerciseLogs: logs });
     } catch (err) {
       console.error(err);
       alert("Couldn't delete that workout.");
+    }
+  };
+
+  const handleUndoDelete = async () => {
+    const pending = undoWorkout;
+    if (!pending) return;
+    setUndoWorkout(null);
+    try {
+      await restoreWorkout(pending.workout, pending.exerciseLogs);
+      loadToday();
+    } catch (err) {
+      console.error("Couldn't restore that workout:", err);
+      alert("Couldn't restore that workout.");
     }
   };
 
@@ -310,14 +327,14 @@ export function Workouts() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-text-primary">{w.workout_type}</p>
                   <p className="text-xs text-text-muted">
-                    {formatDuration(w.duration_minutes ?? 0)}
-                    {w.calories_burned ? ` · ${Math.round(w.calories_burned)} kcal` : ""}
+                    {w.duration_minutes ? `${formatDuration(w.duration_minutes)} · ` : ""}
+                    {w.calories_burned ? `${Math.round(w.calories_burned)} kcal` : ""}
                     {w.heart_rate_avg ? ` · ${w.heart_rate_avg} bpm avg` : ""}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleDelete(w.id)}
+                  onClick={() => handleDelete(w)}
                   className="flex h-11 w-11 flex-none items-center justify-center text-danger"
                 >
                   <Trash2 size={16} />
@@ -341,8 +358,8 @@ export function Workouts() {
       </Card>
 
       {overloadResults && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-3xl border border-border bg-surface p-6">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6">
+          <div className="max-h-[85dvh] w-full max-w-sm overflow-y-auto rounded-3xl border border-border bg-surface p-6 [-webkit-overflow-scrolling:touch]">
             <p className="mb-1 text-center text-3xl">{overloadResults.some((r) => r.improved) ? "💪" : "📊"}</p>
             <h3 className="text-center text-lg font-extrabold text-text-primary">
               {overloadResults.some((r) => r.improved) ? "Progress made!" : "Session logged"}
@@ -370,6 +387,14 @@ export function Workouts() {
             </button>
           </div>
         </div>
+      )}
+
+      {undoWorkout && (
+        <UndoToast
+          message="Item deleted."
+          onUndo={handleUndoDelete}
+          onExpire={() => setUndoWorkout(null)}
+        />
       )}
     </div>
   );
