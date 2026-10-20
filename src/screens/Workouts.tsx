@@ -6,11 +6,13 @@ import {
   createWorkout,
   deleteWorkout,
   getExerciseLogsForWorkout,
+  getExerciseLogsForWorkouts,
   getPreviousBestForExercise,
   getWorkoutsForDate,
+  getWorkoutsForDateRange,
   restoreWorkout,
 } from "@/lib/api";
-import { formatDuration } from "@/lib/dateHelpers";
+import { dayKey, formatDuration, formatShortDate } from "@/lib/dateHelpers";
 import { LoadError } from "@/components/ui/LoadError";
 import { useToday } from "@/lib/useToday";
 import type { ExerciseLogRow, WorkoutRow, WorkoutType } from "@/types/database";
@@ -61,6 +63,9 @@ export function Workouts() {
   const [undoWorkout, setUndoWorkout] = useState<{ workout: WorkoutRow; exerciseLogs: ExerciseLogRow[] } | null>(null);
 
   const [loadError, setLoadError] = useState(false);
+  const [recent, setRecent] = useState<WorkoutRow[] | null>(null);
+  const [recentLogs, setRecentLogs] = useState<Record<string, ExerciseLogRow[]>>({});
+  const [recentError, setRecentError] = useState(false);
   const today = useToday();
 
   const isStrength = STRENGTH_TYPES.includes(workoutType);
@@ -83,6 +88,30 @@ export function Workouts() {
   };
 
   useEffect(loadToday, [today]);
+
+  // The last 7 completed days, so you can see what you lifted last time *before* training,
+  // not only in the "Progress made!" check after saving. Quick "steps" entries are left out.
+  const loadRecent = () => {
+    setRecentError(false);
+    const shift = (n: number) => {
+      const d = new Date(`${today}T12:00:00`);
+      d.setDate(d.getDate() + n);
+      return dayKey(d);
+    };
+    getWorkoutsForDateRange(shift(-7), shift(-1))
+      .then(async (rows) => {
+        const sessions = rows.filter((w) => !(w.workout_type === "Other" && w.duration_minutes === 0));
+        const strengthIds = sessions.filter((w) => STRENGTH_TYPES.includes(w.workout_type as WorkoutType)).map((w) => w.id);
+        setRecentLogs(await getExerciseLogsForWorkouts(strengthIds));
+        setRecent(sessions);
+      })
+      .catch((err) => {
+        console.error(err);
+        setRecentError(true);
+      });
+  };
+
+  useEffect(loadRecent, [today]);
 
   const resetForm = () => {
     setWorkoutType("Gym");
@@ -369,6 +398,44 @@ export function Workouts() {
               {exerciseLogs[w.id]?.length > 0 && (
                 <div className="mt-1.5 space-y-0.5">
                   {exerciseLogs[w.id].map((log) => (
+                    <p key={log.id} className="text-[11px] text-text-muted">
+                      {log.exercise_name}
+                      {log.sets ? ` · ${log.sets} sets` : ""}
+                      {log.reps ? ` x ${log.reps}` : ""}
+                      {log.weight_kg ? ` @ ${log.weight_kg}kg` : ""}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </Card>
+
+      <h2 className="mb-3 text-[17px] font-bold text-text-primary">Recent Sessions</h2>
+      {recentError && <LoadError onRetry={loadRecent} />}
+      <Card className="mb-6">
+        {recentError ? (
+          <p className="py-2 text-[13px] text-text-muted">—</p>
+        ) : recent === null ? (
+          <p className="py-2 text-[13px] text-text-muted">Loading…</p>
+        ) : recent.length === 0 ? (
+          <p className="py-2 text-[13px] text-text-muted">No workouts in the last 7 days.</p>
+        ) : (
+          recent.map((w) => (
+            <div key={w.id} className="border-b border-border py-2.5 last:border-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-sm font-semibold text-text-primary">{w.workout_type}</p>
+                <span className="flex-none text-[11px] text-text-muted">{formatShortDate(w.workout_date)}</span>
+              </div>
+              <p className="text-xs text-text-muted">
+                {w.duration_minutes ? `${formatDuration(w.duration_minutes)}` : ""}
+                {w.calories_burned ? ` · ${Math.round(w.calories_burned)} kcal` : ""}
+                {w.heart_rate_avg ? ` · ${w.heart_rate_avg} bpm avg` : ""}
+              </p>
+              {recentLogs[w.id]?.length > 0 && (
+                <div className="mt-1.5 space-y-0.5">
+                  {recentLogs[w.id].map((log) => (
                     <p key={log.id} className="text-[11px] text-text-muted">
                       {log.exercise_name}
                       {log.sets ? ` · ${log.sets} sets` : ""}

@@ -133,6 +133,22 @@ export async function getExerciseLogsForWorkout(workoutId: string): Promise<Exer
   return data ?? [];
 }
 
+/** Exercise sets for several workouts in a single request, grouped by workout id. */
+export async function getExerciseLogsForWorkouts(workoutIds: string[]): Promise<Record<string, ExerciseLogRow[]>> {
+  if (workoutIds.length === 0) return {};
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase
+    .from("exercise_logs")
+    .select("*")
+    .eq("user_id", userId)
+    .in("workout_id", workoutIds)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  const grouped: Record<string, ExerciseLogRow[]> = {};
+  for (const log of data ?? []) (grouped[log.workout_id] ??= []).push(log);
+  return grouped;
+}
+
 /** Creates the workout row, then its exercise_logs rows (if any). Returns the new workout. */
 export async function createWorkout(input: NewWorkoutInput): Promise<WorkoutRow> {
   const userId = await getCurrentUserId();

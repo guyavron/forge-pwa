@@ -30,13 +30,15 @@ const MENU: MealSeed[][] = [
 
 // Strength sessions show a clear progression, so the "Progress made!" check has history to
 // compare against: log Bench Press above 65 kg in the demo to see it.
-type WorkoutSeed = { dayOffset: number; type: string; minutes: number; kcal: number | null; hr: number | null; exercises?: [string, number, number, number][] };
+type WorkoutSeed = { dayOffset: number; type: string; minutes: number; kcal: number | null; hr: number | null; time?: string; exercises?: [string, number, number, number][] };
 const WORKOUTS: WorkoutSeed[] = [
   { dayOffset: -6, type: "Gym", minutes: 60, kcal: 380, hr: 128, exercises: [["Bench Press", 4, 8, 60], ["Squat", 4, 6, 80], ["Pull-ups", 3, 8, 0]] },
   { dayOffset: -5, type: "Bouldering", minutes: 90, kcal: 520, hr: 122 },
   { dayOffset: -4, type: "Gym", minutes: 65, kcal: 400, hr: 130, exercises: [["Bench Press", 4, 8, 62.5], ["Squat", 4, 6, 82.5], ["Overhead Press", 3, 8, 40]] },
   { dayOffset: -3, type: "Running", minutes: 30, kcal: 330, hr: 152 },
   { dayOffset: -2, type: "Gym", minutes: 60, kcal: 390, hr: 129, exercises: [["Bench Press", 4, 6, 65], ["Squat", 4, 6, 85], ["Pull-ups", 3, 10, 0]] },
+  // today: a light morning run, so the dashboard and Workouts tab aren't empty on arrival
+  { dayOffset: 0, type: "Running", minutes: 25, kcal: 280, hr: 148, time: "07:00" },
 ];
 // "Steps & daily movement" entries (calories from a watch, no duration)
 const STEPS: [number, number][] = [[-6, 250], [-4, 300], [-2, 220], [-1, 350]];
@@ -70,7 +72,7 @@ export async function seedDemoData(userId: string): Promise<void> {
   const workouts = [
     ...WORKOUTS.map((w) => ({
       id: crypto.randomUUID(), user_id: userId, workout_type: w.type, duration_minutes: w.minutes,
-      calories_burned: w.kcal, heart_rate_avg: w.hr, notes: null, workout_date: at(w.dayOffset, "18:00").toISOString(),
+      calories_burned: w.kcal, heart_rate_avg: w.hr, notes: null, workout_date: at(w.dayOffset, w.time ?? "18:00").toISOString(),
     })),
     ...STEPS.map(([dayOffset, kcal]) => ({
       id: crypto.randomUUID(), user_id: userId, workout_type: "Other", duration_minutes: 0,
