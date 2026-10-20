@@ -110,7 +110,7 @@ flowchart LR
 - **Live and installable** at the link above, deployed automatically from `main` on every push.
 - I used it for my own nutrition and training for about two weeks, then stopped once I no longer had a cut or bulk goal to track. The logging habit was tied to the goal, not to the app.
 - **Security verified on the live database, not assumed:** as a demo user, reading other users' rows returns nothing on all 7 tables, and inserting rows under another user's id is rejected (`403`, RLS).
-- **The schema is reproducible:** [`supabase/schema.sql`](supabase/schema.sql) was exported from the live project and run on a fresh Postgres: all 7 tables and policies are created, cross-user reads and writes are blocked, and deleting a workout cascades to its sets.
+- **The schema is reproducible and its security is tested automatically:** [`supabase/schema.sql`](supabase/schema.sql) was exported from the live project. `npm run test:rls` loads it into a throwaway in-memory Postgres and runs 12 checks as two different users (no cross-user reads, writes, updates or deletes; one sleep log per night; deleting a workout deletes its sets). Removing RLS from a single table makes 6 of them fail.
 - ~3,900 lines of TypeScript, `tsc` + production build pass with zero errors.
 
 ## How I built it
@@ -128,7 +128,7 @@ I built Forge with an **AI-assisted workflow, using Claude as the implementation
 - **AI estimates are estimates.** Portion size and hidden fats are hard to see in a photo; that's why every scan goes through a review step.
 - **Demo users can use the AI scan.** It's limited by the Gemini free-tier quota; a per-user rate limit is the next step if it gets abused.
 - **A few legacy columns remain** in the schema (e.g. `profiles.user_id`, `sleep_logs.sleep_hours`) from earlier designs; they're marked in `schema.sql` and unused by the app. Next: drop them in a migration.
-- **No automated tests.** The macro and budget math (`macroCalculator.ts`) is the first candidate for unit tests.
+- **Only the database rules have automated tests** (`npm run test:rls`). The macro and budget math (`macroCalculator.ts`) is next, then running both in CI on every push.
 
 ## Tech stack
 
@@ -148,6 +148,7 @@ cd forge-pwa
 npm install
 cp .env.example .env     # add your Supabase URL + publishable key, and a Gemini key
 npm run dev              # app only; use `npx vercel dev` to also run the /api function
+npm run test:rls         # check the database security rules (no Supabase account needed)
 ```
 
 You'll need your own Supabase project: open **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql) and run it. It creates all 7 tables, keys, indexes and RLS policies. To use the demo button, also enable **anonymous sign-ins** in your project's Auth settings.
