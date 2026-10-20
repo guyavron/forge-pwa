@@ -49,6 +49,8 @@ export function Profile({ profile, onSaved, isOnboarding = false }: ProfileProps
     setProteinTarget(String(recommendation.proteinTarget));
   };
 
+  const inRange = (v: string, min: number, max: number) => Number(v) >= min && Number(v) <= max;
+
   const canSubmit =
     Number(age) > 0 &&
     !!gender &&
@@ -59,9 +61,27 @@ export function Profile({ profile, onSaved, isOnboarding = false }: ProfileProps
     Number(calorieTarget) > 0 &&
     Number(proteinTarget) > 0;
 
+  // Typos like 1780 cm or 7 kg would quietly produce absurd daily targets, so obvious
+  // out-of-range values are rejected with a specific message.
+  const rangeProblem = !inRange(age, 13, 100)
+    ? "Age must be between 13 and 100."
+    : !inRange(height, 100, 250)
+      ? "Height must be between 100 and 250 cm."
+      : !inRange(currentWeight, 30, 300) || !inRange(targetWeight, 30, 300)
+        ? "Weights must be between 30 and 300 kg."
+        : !inRange(calorieTarget, 1000, 6000)
+          ? "Daily calorie target must be between 1000 and 6000 kcal."
+          : !inRange(proteinTarget, 30, 400)
+            ? "Daily protein target must be between 30 and 400 g."
+            : null;
+
   const handleSubmit = async () => {
     if (!canSubmit) {
       alert("Fill in age, gender, height, both weights, activity level, and confirm your calorie/protein targets.");
+      return;
+    }
+    if (rangeProblem) {
+      alert(rangeProblem);
       return;
     }
     setSaving(true);

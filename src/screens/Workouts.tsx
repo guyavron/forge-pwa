@@ -10,7 +10,9 @@ import {
   getWorkoutsForDate,
   restoreWorkout,
 } from "@/lib/api";
-import { dayKey, formatDuration } from "@/lib/dateHelpers";
+import { formatDuration } from "@/lib/dateHelpers";
+import { LoadError } from "@/components/ui/LoadError";
+import { useToday } from "@/lib/useToday";
 import type { ExerciseLogRow, WorkoutRow, WorkoutType } from "@/types/database";
 
 const WORKOUT_TYPES: { value: WorkoutType; label: string }[] = [
@@ -58,10 +60,14 @@ export function Workouts() {
   const [overloadResults, setOverloadResults] = useState<OverloadResult[] | null>(null);
   const [undoWorkout, setUndoWorkout] = useState<{ workout: WorkoutRow; exerciseLogs: ExerciseLogRow[] } | null>(null);
 
+  const [loadError, setLoadError] = useState(false);
+  const today = useToday();
+
   const isStrength = STRENGTH_TYPES.includes(workoutType);
 
   const loadToday = () => {
-    getWorkoutsForDate(dayKey())
+    setLoadError(false);
+    getWorkoutsForDate(today)
       .then(async (workouts) => {
         setTodaysWorkouts(workouts);
         const strengthWorkouts = workouts.filter((w) => STRENGTH_TYPES.includes(w.workout_type as WorkoutType));
@@ -70,10 +76,13 @@ export function Workouts() {
         );
         setExerciseLogs(Object.fromEntries(entries));
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error(err);
+        setLoadError(true);
+      });
   };
 
-  useEffect(loadToday, []);
+  useEffect(loadToday, [today]);
 
   const resetForm = () => {
     setWorkoutType("Gym");
@@ -94,8 +103,22 @@ export function Workouts() {
 
   const handleSubmit = async () => {
     const durationMinutes = Number(duration);
-    if (!durationMinutes || durationMinutes <= 0) {
-      alert("Enter a duration greater than 0.");
+    if (!durationMinutes || durationMinutes <= 0 || durationMinutes > 1440) {
+      alert("Enter a duration between 1 and 1440 minutes.");
+      return;
+    }
+    // A negative calorie value would silently shrink the day's calorie target.
+    if (calories && !(Number(calories) >= 0 && Number(calories) <= 5000)) {
+      alert("Calories must be between 0 and 5000.");
+      return;
+    }
+    if (heartRate && !(Number(heartRate) >= 30 && Number(heartRate) <= 250)) {
+      alert("Average heart rate must be between 30 and 250 bpm.");
+      return;
+    }
+    const badSet = isStrength && exercises.some((e) => [e.sets, e.reps, e.weight_kg].some((v) => v !== "" && !(Number(v) >= 0)));
+    if (badSet) {
+      alert("Sets, reps and weight can't be negative.");
       return;
     }
 
@@ -317,8 +340,11 @@ export function Workouts() {
       </Card>
 
       <h2 className="mb-3 text-[17px] font-bold text-text-primary">Today's Training</h2>
+      {loadError && <LoadError onRetry={loadToday} />}
       <Card className="mb-6">
-        {todaysWorkouts.length === 0 ? (
+        {loadError ? (
+          <p className="py-2 text-[13px] text-text-muted">—</p>
+        ) : todaysWorkouts.length === 0 ? (
           <p className="py-2 text-[13px] text-text-muted">No workouts logged yet today.</p>
         ) : (
           todaysWorkouts.map((w) => (

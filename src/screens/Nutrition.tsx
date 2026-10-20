@@ -3,8 +3,10 @@ import { Camera, Loader2, Star, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { UndoToast } from "@/components/ui/UndoToast";
-import { addFavoriteMeal, addMeal, deleteMeal, getFavoriteMeals, getMealsForDate, restoreMeal } from "@/lib/api";
-import { dayKey } from "@/lib/dateHelpers";
+import { addFavoriteMeal, addMeal, deleteMeal, getFavoriteMeals, getMealsForDate, getWorkoutsForDate, restoreMeal } from "@/lib/api";
+import { LoadError } from "@/components/ui/LoadError";
+import { macroGramTargets } from "@/lib/macroCalculator";
+import { useToday } from "@/lib/useToday";
 import { fileToBase64, scanMealImage } from "@/services/GeminiVisionService";
 import type { FavoriteMealRow, MealCategory, MealRow, ProfileRow } from "@/types/database";
 
@@ -27,19 +29,37 @@ export function Nutrition({ profile }: { profile: ProfileRow }) {
   const [scanning, setScanning] = useState(false);
   const [scanDraft, setScanDraft] = useState<ScanDraft | null>(null);
   const [undoMeal, setUndoMeal] = useState<MealRow | null>(null);
+  const [burnedToday, setBurnedToday] = useState(0);
+  const [loadError, setLoadError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const today = useToday();
 
   const loadMeals = () => {
-    getMealsForDate(dayKey()).then(setMeals).catch(console.error);
+    // Today's burned calories are loaded too, so this screen shows the same workout-adjusted
+    // target as the Dashboard instead of the bare base target.
+    Promise.all([getMealsForDate(today), getWorkoutsForDate(today)])
+      .then(([m, w]) => {
+        setMeals(m);
+        setBurnedToday(w.reduce((sum, x) => sum + (x.calories_burned ?? 0), 0));
+        setLoadError(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoadError(true);
+      });
   };
   const loadFavorites = () => {
-    getFavoriteMeals().then(setFavorites).catch(console.error);
+    getFavoriteMeals().then(setFavorites).catch((err) => {
+      console.error(err);
+      setLoadError(true);
+    });
   };
 
   useEffect(() => {
     loadMeals();
     loadFavorites();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today]);
 
   const handleDelete = async (meal: MealRow) => {
     try {
@@ -137,9 +157,22 @@ export function Nutrition({ profile }: { profile: ProfileRow }) {
     { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
   );
 
+  const calorieTarget = (profile.daily_calorie_target ?? 0) + burnedToday;
+  const proteinTarget = profile.daily_protein_target ?? 0;
+  const { carbs: carbTarget, fat: fatTarget } = macroGramTargets(calorieTarget, proteinTarget);
+
   return (
     <div className="px-4 pt-3">
       <h1 className="mb-4 text-2xl font-extrabold text-text-primary">Nutrition</h1>
+
+      {loadError && (
+        <LoadError
+          onRetry={() => {
+            loadMeals();
+            loadFavorites();
+          }}
+        />
+      )}
 
       <div className="mb-4">
         <h3 className="mb-2.5 text-[13px] font-bold text-text-secondary">Quick Add Favorites</h3>
@@ -173,10 +206,10 @@ export function Nutrition({ profile }: { profile: ProfileRow }) {
       </div>
 
       <Card className="mb-4">
-        <ProgressBar label="Calories" consumed={totals.calories} target={profile.daily_calorie_target ?? 0} unit=" kcal" colorClassName="bg-accent" showPercent />
-        <ProgressBar label="Protein" consumed={totals.protein_g} target={profile.daily_protein_target ?? 0} colorClassName="bg-protein" showPercent />
-        <ProgressBar label="Carbs" consumed={totals.carbs_g} target={Math.max(profile.daily_calorie_target ?? 0, 0) / 4} colorClassName="bg-carbs" />
-        <ProgressBar label="Fat" consumed={totals.fat_g} target={Math.max(profile.daily_calorie_target ?? 0, 0) * 0.25 / 9} colorClassName="bg-fat" />
+        <ProgressBar label="Calories" consumed={totals.calories} target={calorieTarget} unit=" kcal" colorClassName="bg-accent" showPercent />
+        <ProgressBar label="Protein" consumed={totals.protein_g} target={proteinTarget} colorClassName="bg-protein" showPercent />
+        <ProgressBar label="Carbs" consumed={totals.carbs_g} target={carbTarget} colorClassName="bg-carbs" />
+        <ProgressBar label="Fat" consumed={totals.fat_g} target={fatTarget} colorClassName="bg-fat" />
       </Card>
 
       <input
@@ -301,7 +334,7 @@ function CategoryPickerSheet({
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
+        className="mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
         onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}
       >
@@ -383,7 +416,7 @@ function ScanReviewSheet({
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
+        className="mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
         onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}
       >
@@ -509,7 +542,7 @@ function QuickAddSheet({
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
+        className="mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
         onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}
       >

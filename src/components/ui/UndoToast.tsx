@@ -21,7 +21,7 @@ export function UndoToast({ message, onUndo, onExpire }: UndoToastProps) {
 
   return (
     <div
-      className="fixed inset-x-4 z-[60] flex items-center justify-between rounded-2xl border border-border bg-surface-elevated px-4 py-3 shadow-lg"
+      className="fixed inset-x-4 z-[60] mx-auto flex max-w-md items-center justify-between rounded-2xl border border-border bg-surface-elevated px-4 py-3 shadow-lg"
       style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" }}
     >
       <span className="text-[13px] font-semibold text-text-primary">{message}</span>

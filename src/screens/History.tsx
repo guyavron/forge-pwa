@@ -3,7 +3,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { getExerciseLogsForWorkout, getMealsForDate, getMealsForDateRange, getWorkoutsForDate, getWorkoutsForDateRange } from "@/lib/api";
-import { dayKey, formatDuration } from "@/lib/dateHelpers";
+import { dayKey, formatDuration, formatShortDate } from "@/lib/dateHelpers";
+import { LoadError } from "@/components/ui/LoadError";
+import { useToday } from "@/lib/useToday";
 import type { ExerciseLogRow, MealRow, ProfileRow, WorkoutRow } from "@/types/database";
 
 const STRENGTH_TYPES = ["Gym", "Bouldering"];
@@ -61,9 +63,13 @@ function DailyView({
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, ExerciseLogRow[]>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const today = useToday();
 
   useEffect(() => {
     setLoading(true);
+    setLoadError(false);
     Promise.all([getMealsForDate(selectedDay), getWorkoutsForDate(selectedDay)])
       .then(async ([m, w]) => {
         setMeals(m);
@@ -74,9 +80,12 @@ function DailyView({
         );
         setExerciseLogs(Object.fromEntries(entries));
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
-  }, [selectedDay]);
+  }, [selectedDay, reloadKey]);
 
   const shiftDay = (delta: number) => {
     const d = new Date(`${selectedDay}T00:00:00`);
@@ -96,7 +105,8 @@ function DailyView({
   const caloriesBurned = workouts.reduce((sum, w) => sum + (w.calories_burned ?? 0), 0);
   const dynamicTarget = (profile.daily_calorie_target ?? 0) + caloriesBurned;
   const netBalance = Math.round(totals.calories - dynamicTarget);
-  const isToday = selectedDay === dayKey();
+  const isToday = selectedDay >= today;
+  const hasMeals = meals.length > 0;
 
   return (
     <>
@@ -111,7 +121,7 @@ function DailyView({
         <input
           type="date"
           value={selectedDay}
-          max={dayKey()}
+          max={today}
           onChange={(e) => e.target.value && onSelectDay(e.target.value)}
           className="min-h-11 flex-1 rounded-xl border border-border bg-surface-elevated px-3 text-center text-text-primary"
         />
@@ -127,6 +137,8 @@ function DailyView({
 
       {loading ? (
         <p className="py-6 text-center text-[13px] text-text-muted">Loading…</p>
+      ) : loadError ? (
+        <LoadError onRetry={() => setReloadKey((k) => k + 1)} />
       ) : (
         <>
           <Card className="mb-4">
@@ -135,13 +147,16 @@ function DailyView({
                 <p className="text-2xl font-extrabold text-text-primary">{Math.round(totals.calories)} kcal</p>
                 <p className="mt-0.5 text-xs text-text-muted">Target {Math.round(dynamicTarget)} kcal</p>
               </div>
-              <div className="text-right">
-                <p className={`text-lg font-extrabold ${netBalance > 0 ? "text-warning" : "text-success"}`}>
-                  {netBalance > 0 ? "+" : ""}
-                  {netBalance}
-                </p>
-                <p className="text-xs text-text-muted">{netBalance > 0 ? "surplus" : "deficit"}</p>
-              </div>
+              {/* A day with no meals logged isn't a real deficit, so no balance is shown for it. */}
+              {hasMeals && (
+                <div className="text-right">
+                  <p className={`text-lg font-extrabold ${netBalance > 0 ? "text-warning" : "text-success"}`}>
+                    {netBalance > 0 ? "+" : ""}
+                    {netBalance}
+                  </p>
+                  <p className="text-xs text-text-muted">{netBalance > 0 ? "surplus" : "deficit"}</p>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
               <div>
@@ -228,9 +243,13 @@ const ADHERENCE_BAND = 0.1;
 
 function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
   const [daySummaries, setDaySummaries] = useState<DaySummary[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const today = useToday();
 
   useEffect(() => {
     setDaySummaries(null);
+    setLoadError(false);
     const endDay = dayKeyOffset(0);
     const startDay = dayKeyOffset(-(days - 1));
 
@@ -265,8 +284,16 @@ function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
         }
         setDaySummaries(summaries);
       })
-      .catch(console.error);
-  }, [profile.daily_calorie_target, days]);
+      .catch((err) => {
+        // Without this the screen stayed on "Loading…" forever after a failed request.
+        console.error(err);
+        setLoadError(true);
+      });
+  }, [profile.daily_calorie_target, days, today, reloadKey]);
+
+  if (loadError) {
+    return <LoadError onRetry={() => setReloadKey((k) => k + 1)} />;
+  }
 
   if (daySummaries === null) {
     return <p className="py-6 text-center text-[13px] text-text-muted">Loading…</p>;
@@ -330,7 +357,7 @@ function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
           return (
             <div key={d.day} className="flex items-center justify-between border-b border-border py-2 last:border-0">
               <div>
-                <p className="text-[13px] font-semibold text-text-primary">{d.day}</p>
+                <p className="text-[13px] font-semibold text-text-primary">{formatShortDate(`${d.day}T12:00:00`)}</p>
                 <p className="text-[11px] text-text-muted">
                   {Math.round(d.calories)} / {Math.round(d.dynamicTarget)} kcal
                 </p>

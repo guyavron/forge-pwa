@@ -3,6 +3,8 @@ import { Droplet, Flame, Footprints, Moon } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { LoadError } from "@/components/ui/LoadError";
+import { useToday } from "@/lib/useToday";
 import { LogSleepModal } from "@/components/sleep/LogSleepModal";
 import { SleepDetailModal } from "@/components/sleep/SleepDetailModal";
 import {
@@ -15,7 +17,7 @@ import {
   getWorkoutsForDate,
   logActiveCalorieBurn,
 } from "@/lib/api";
-import { dayKey, formatDuration } from "@/lib/dateHelpers";
+import { formatDuration } from "@/lib/dateHelpers";
 import { formatHrMinLabel } from "@/lib/sleepStages";
 import type { MealRow, ProfileRow, SleepLogRow, WaterLogRow, WorkoutRow } from "@/types/database";
 
@@ -32,14 +34,16 @@ export function Dashboard({ profile }: { profile: ProfileRow }) {
   const [water, setWater] = useState<WaterLogRow[]>([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [loggingWater, setLoggingWater] = useState(false);
   const [showBurnModal, setShowBurnModal] = useState(false);
   const [showSleepDetail, setShowSleepDetail] = useState(false);
   const [showLogSleep, setShowLogSleep] = useState(false);
 
-  const today = dayKey();
+  const today = useToday();
 
   const loadAll = () => {
+    setLoadError(false);
     Promise.all([
       getMealsForDate(today),
       getWorkoutsForDate(today),
@@ -54,11 +58,15 @@ export function Dashboard({ profile }: { profile: ProfileRow }) {
         setWater(wa);
         setStreak(st);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadAll, []);
+  // Reloads when the date changes (app left open past midnight).
+  useEffect(loadAll, [today]);
 
   const handleAddWater = async (amountMl: number) => {
     setLoggingWater(true);
@@ -100,6 +108,8 @@ export function Dashboard({ profile }: { profile: ProfileRow }) {
         {profile.current_weight ?? "—"}kg &rarr; {profile.target_weight ?? "—"}kg
         {profile.fitness_goal ? ` · ${profile.fitness_goal.replace("_", " ")}` : ""}
       </p>
+
+      {loadError && <LoadError onRetry={loadAll} />}
 
       <Card className="mb-4">
         <ProgressBar
@@ -146,6 +156,8 @@ export function Dashboard({ profile }: { profile: ProfileRow }) {
       <Card className="mb-4">
         {loading ? (
           <p className="py-2 text-[13px] text-text-muted">Loading…</p>
+        ) : loadError ? (
+          <p className="py-2 text-[13px] text-text-muted">—</p>
         ) : workouts.length === 0 ? (
           <p className="py-2 text-[13px] text-text-muted">No workouts logged yet today.</p>
         ) : (
@@ -167,7 +179,7 @@ export function Dashboard({ profile }: { profile: ProfileRow }) {
 
       <SectionHeading title="Water" />
       <Card className="mb-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-2xl font-extrabold text-text-primary">{waterMl}ml</p>
             <p className="mt-0.5 text-xs text-text-muted">of {DAILY_WATER_GOAL_ML}ml goal</p>

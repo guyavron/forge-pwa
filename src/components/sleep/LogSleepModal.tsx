@@ -94,7 +94,7 @@ export function LogSleepModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
+        className="mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-border bg-surface p-5 pb-8 [-webkit-overflow-scrolling:touch]"
         onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}
       >

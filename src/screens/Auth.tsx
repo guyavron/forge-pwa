@@ -73,7 +73,7 @@ export function Auth() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-background [-webkit-overflow-scrolling:touch]">
-      <div className="flex min-h-full flex-col justify-center px-6 py-8">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-6 py-8">
       <div className="mx-auto mb-8 flex flex-col items-center">
         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-muted">
           <Dumbbell size={26} className="text-accent" />

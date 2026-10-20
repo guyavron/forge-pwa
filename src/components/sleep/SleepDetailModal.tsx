@@ -36,7 +36,7 @@ export function SleepDetailModal({
   const { hours, minutes } = formatHrMin(timeAsleep);
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-background">
+    <div className="fixed inset-0 z-[60] mx-auto flex max-w-lg flex-col bg-background">
       <div
         className="flex items-center justify-between px-4 py-3"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}

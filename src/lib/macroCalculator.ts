@@ -60,3 +60,16 @@ export function calculateMacros(inputs: MacroInputs): MacroRecommendation {
     proteinTarget: Math.round(proteinTarget),
   };
 }
+
+/** Share of daily calories that comes from fat. */
+const FAT_CALORIE_SHARE = 0.25;
+
+/** Carb and fat gram targets that fit inside the calorie target together with protein.
+ *  Protein and carbs are 4 kcal/g, fat is 9 kcal/g; fat takes a fixed 25% of calories and
+ *  carbs get whatever is left, so protein + carbs + fat add up to the calorie target. */
+export function macroGramTargets(calorieTarget: number, proteinTarget: number): { carbs: number; fat: number } {
+  const calories = Math.max(calorieTarget, 0);
+  const fat = (calories * FAT_CALORIE_SHARE) / 9;
+  const carbs = Math.max(calories - Math.max(proteinTarget, 0) * 4 - fat * 9, 0) / 4;
+  return { carbs, fat };
+}
