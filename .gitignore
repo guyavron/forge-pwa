@@ -33,3 +33,6 @@ dev-dist
 
 # Private write-up, kept locally (not part of the public repo)
 case-study.md
+
+# Files the Claude desktop app saves here (not part of the project)
+Claude outputs/

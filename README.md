@@ -21,6 +21,22 @@
   <br/><sub>Demo data (fictional). Try it: open the live demo and tap <b>"Try the demo — no sign-up"</b>. A week of sample data is created for you; log a Bench Press above 65 kg to see the progress check.</sub>
 </p>
 
+### 📱 Install it on your phone
+
+Forge is a **Progressive Web App**: it installs from the browser like a native app, with no App Store.
+
+| Device | How |
+|---|---|
+| **iPhone** | Open the link in **Safari** → Share → **Add to Home Screen** |
+| **Android** | Open the link in **Chrome** → ⋮ menu → **Install app** (or **Add to Home screen**) |
+
+You get a home-screen icon, and it opens full-screen with no browser bar, like any other app:
+
+<p align="center">
+  <img src="docs/phone.jpg" alt="Forge installed on an iPhone: home-screen icon, and the app open full-screen" width="420"/>
+  <br/><sub>Installed on my iPhone from Safari. Demo data.</sub>
+</p>
+
 ---
 
 ## The problem
