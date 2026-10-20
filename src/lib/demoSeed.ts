@@ -17,12 +17,13 @@ import type { MealCategory } from "@/types/database";
 type MealSeed = [MealCategory, string, number, number, number, number, string]; // category, name, kcal, P, C, F, time
 
 const MENU: MealSeed[][] = [
-  [["Breakfast", "Oatmeal with banana & peanut butter", 620, 22, 88, 20, "08:15"], ["Lunch", "Chicken rice bowl", 780, 55, 90, 18, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Salmon, potatoes & salad", 850, 48, 70, 38, "19:45"], ["Snack", "Greek yogurt with honey", 260, 20, 30, 6, "21:30"]],
-  [["Breakfast", "Shakshuka with bread", 640, 30, 55, 30, "08:30"], ["Lunch", "Beef burger & sweet potato", 900, 50, 85, 38, "13:15"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Pasta with turkey bolognese", 820, 52, 105, 20, "20:00"]],
-  [["Breakfast", "Omelette (3 eggs) & toast", 560, 32, 40, 28, "08:00"], ["Lunch", "Chicken shawarma plate", 950, 60, 95, 35, "13:30"], ["Snack", "Cottage cheese & crackers", 310, 26, 28, 10, "17:00"], ["Dinner", "Tuna salad & rice", 700, 45, 80, 20, "20:15"]],
-  [["Breakfast", "Oatmeal with banana & peanut butter", 620, 22, 88, 20, "08:15"], ["Lunch", "Schnitzel, rice & veggies", 920, 50, 100, 32, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Chicken wrap", 720, 46, 70, 26, "19:30"], ["Snack", "Dates & almonds", 300, 6, 40, 14, "22:00"]],
-  [["Breakfast", "Greek yogurt with granola", 520, 28, 65, 15, "08:45"], ["Lunch", "Chicken rice bowl", 780, 55, 90, 18, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Steak, potatoes & salad", 980, 62, 70, 45, "20:00"]],
-  [["Breakfast", "Shakshuka with bread", 640, 30, 55, 30, "09:00"], ["Lunch", "Sushi (12 pcs)", 700, 30, 110, 14, "14:00"], ["Snack", "Protein bar", 230, 20, 25, 7, "17:00"], ["Dinner", "Pizza (3 slices)", 900, 36, 105, 36, "20:30"]],
+  // Past days land near each day's workout-adjusted target (one day over), like a real bulk.
+  [["Breakfast", "Oatmeal with banana & peanut butter", 821, 22, 118, 29, "08:15"], ["Lunch", "Chicken rice bowl", 1031, 55, 128, 29, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Salmon, potatoes & salad", 1122, 48, 111, 50, "19:45"], ["Snack", "Greek yogurt with honey", 348, 20, 43, 10, "21:30"]],
+  [["Breakfast", "Shakshuka with bread & tahini", 929, 30, 98, 43, "08:30"], ["Lunch", "Beef burger & sweet potato", 1306, 50, 146, 56, "13:15"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Pasta with turkey bolognese", 1184, 52, 160, 36, "20:00"]],
+  [["Breakfast", "Omelette (3 eggs) & toast", 769, 32, 72, 37, "08:00"], ["Lunch", "Chicken shawarma plate", 1310, 60, 149, 51, "13:30"], ["Snack", "Cottage cheese & crackers", 427, 26, 46, 15, "17:00"], ["Dinner", "Tuna salad & rice", 968, 45, 120, 32, "20:15"]],
+  [["Breakfast", "Oatmeal with banana & peanut butter", 771, 22, 110, 27, "08:15"], ["Lunch", "Schnitzel, rice & veggies", 1142, 50, 133, 42, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Chicken wrap", 896, 46, 96, 34, "19:30"], ["Snack", "Dates & almonds", 371, 6, 51, 17, "22:00"]],
+  [["Breakfast", "Greek yogurt with granola", 767, 28, 102, 26, "08:45"], ["Lunch", "Chicken rice bowl", 1157, 55, 146, 35, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"], ["Dinner", "Steak, potatoes & salad", 1449, 62, 140, 66, "20:00"]],
+  [["Breakfast", "Shakshuka with bread & tahini", 1000, 30, 109, 46, "09:00"], ["Lunch", "Sushi (18 pcs)", 1089, 30, 169, 31, "14:00"], ["Snack", "Protein bar", 360, 20, 44, 13, "17:00"], ["Dinner", "Pizza (4 slices)", 1398, 36, 180, 58, "20:30"]],
   // today: a partly logged day, so the dashboard shows progress rather than a finished day
   [["Breakfast", "Oatmeal with banana & peanut butter", 620, 22, 88, 20, "08:15"], ["Lunch", "Chicken rice bowl", 780, 55, 90, 18, "13:00"], ["Snack", "Protein shake", 280, 40, 12, 6, "16:30"]],
 ];

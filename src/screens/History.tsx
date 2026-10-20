@@ -250,8 +250,10 @@ function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
   useEffect(() => {
     setDaySummaries(null);
     setLoadError(false);
-    const endDay = dayKeyOffset(0);
-    const startDay = dayKeyOffset(-(days - 1));
+    // Summaries cover the last N *completed* days. Today is still in progress, so counting it
+    // would drag the averages down and mark it "missed" every morning.
+    const endDay = dayKeyOffset(-1);
+    const startDay = dayKeyOffset(-days);
 
     Promise.all([getMealsForDateRange(startDay, endDay), getWorkoutsForDateRange(startDay, endDay)])
       .then(([meals, workouts]) => {
@@ -270,7 +272,7 @@ function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
 
         const baseTarget = profile.daily_calorie_target ?? 0;
         const summaries: DaySummary[] = [];
-        for (let i = 0; i < days; i++) {
+        for (let i = 1; i <= days; i++) {
           const day = dayKeyOffset(-i);
           if (!caloriesByDay.has(day)) continue; // only count days that were actually logged
           const caloriesBurned = burnedByDay.get(day) ?? 0;
@@ -303,7 +305,7 @@ function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
     return (
       <Card>
         <p className="py-2 text-center text-[13px] text-text-muted">
-          Nothing logged in the last {days} days yet.
+          Nothing logged in the last {days} completed days yet.
         </p>
       </Card>
     );
@@ -320,7 +322,7 @@ function SummaryView({ profile, days }: { profile: ProfileRow; days: number }) {
     <>
       <Card className="mb-4">
         <p className="mb-3 text-xs font-semibold text-text-secondary">
-          Based on {loggedDays} logged day{loggedDays === 1 ? "" : "s"} out of the last {days}.
+          Based on {loggedDays} logged day{loggedDays === 1 ? "" : "s"} out of the last {days} completed days (today isn't counted until it's over).
         </p>
         <div className="mb-4 grid grid-cols-2 gap-3">
           <div>

@@ -30,3 +30,6 @@ dev-dist
 *.sw?
 
 .vercel
+
+# Private write-up, kept locally (not part of the public repo)
+case-study.md
