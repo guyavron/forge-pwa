@@ -15,12 +15,12 @@ export function ProgressBar({ label, consumed, target, unit = "g", colorClassNam
   const percentComplete = target > 0 ? Math.round((consumed / target) * 100) : 0;
   return (
     <div className="mb-3.5 last:mb-0">
-      <div className="mb-1.5 flex items-baseline justify-between">
+      <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
         <span className="flex items-center gap-1.5 text-[13px] font-semibold text-text-secondary">
           {label}
           {badge}
         </span>
-        <span className="text-[13px] font-semibold text-text-primary">
+        <span className="whitespace-nowrap text-[13px] font-semibold text-text-primary">
           {Math.round(consumed)}
           {unit} <span className="font-normal text-text-muted">/ {Math.round(target)}{unit}</span>
           {showPercent && <span className="font-normal text-text-muted"> ({percentComplete}%)</span>}
