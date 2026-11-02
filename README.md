@@ -128,6 +128,7 @@ I built Forge with an **AI-assisted workflow, using Claude as the implementation
 - **AI estimates are estimates.** Portion size and hidden fats are hard to see in a photo; that's why every scan goes through a review step.
 - **Demo users can use the AI scan.** It's limited by the Gemini free-tier quota; a per-user rate limit is the next step if it gets abused.
 - **A few legacy columns remain** in the schema (e.g. `profiles.user_id`, `sleep_logs.sleep_hours`) from earlier designs; they're marked in `schema.sql` and unused by the app. Next: drop them in a migration.
+- **Free-plan database pauses after a week without use**, which took the demo down once. A scheduled GitHub Action now reads from it every 3 days (`.github/workflows/keep-database-awake.yml`).
 - **Only the database rules have automated tests** (`npm run test:rls`). The macro and budget math (`macroCalculator.ts`) is next, then running both in CI on every push.
 
 ## Tech stack
