@@ -18,6 +18,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          # A secret pasted with a trailing line break makes curl reject the URL.
+          SUPABASE_URL=$(echo "$SUPABASE_URL" | tr -d '[:space:]')
+          SUPABASE_ANON_KEY=$(echo "$SUPABASE_ANON_KEY" | tr -d '[:space:]')
           status=$(curl -s -o /dev/null -w "%{http_code}" \
             "$SUPABASE_URL/rest/v1/meals?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY")
