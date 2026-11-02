@@ -119,7 +119,7 @@ I built Forge with an **AI-assisted workflow: Claude wrote the code**, and my pa
 - **Defined the product**: what to track, the target formula, how the calorie budget should react to workouts, what the dashboard shows first
 - **Made the main decisions**: dropping the native iPhone app for a web app after hitting the $99/year wall, Supabase with database rules instead of my own server, the AI key on the server only
 - **Tested on my own iPhone, with my own data**, and asked for a round of testing focused on failures (no internet, negative values, small screens, a demo user trying to read other users' data), then checked the results
-- **Handled the accounts myself**: replacing the AI key, the Supabase sign-in settings and the deployment
+- **Replaced the exposed AI key myself** once it was found in the downloaded code
 
 ## Limitations & next steps
 
