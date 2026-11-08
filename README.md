@@ -3,7 +3,8 @@
 <p align="center">
   <b>A fitness &amp; nutrition tracker that puts calories, protein, workouts and sleep in one place:</b><br/>
   daily targets calculated from your body stats, a calorie budget that grows with the workouts you log,<br/>
-  and meals logged from a photo with AI. Installable on an iPhone home screen, with no App Store.
+  and meals logged from a photo with AI. Installable on an iPhone home screen, with no App Store.<br/>
+  <sub>Built August 2026</sub>
 </p>
 
 <p align="center">
@@ -81,11 +82,9 @@ flowchart LR
 | Decision | Why |
 |---|---|
 | **Web app instead of a native iOS app** | The first version was a native iPhone app. Installing it on a phone (and reading Apple Health data) needs the paid Apple Developer Program ($99/year). A web app installs from Safari's "Add to Home Screen" for free and opens full-screen like a native app. The trade-off: no Apple Health, so activity calories are entered by hand. |
-| **Supabase with database rules instead of my own server** | Database, sign-in and access in one hosted service. The rule "a user only sees rows with their own user id" (`auth.uid() = user_id`) is on every table **inside the database**, so it holds even if someone skips the app and sends requests to the database directly. That removed a whole server I'd otherwise have to build and secure. |
-| **The AI key only on the server** | Any setting whose name starts with `VITE_` ends up inside the code that every visitor downloads. So the key moved into a server function that first checks the caller is signed in, and only signed-in users can use the AI quota. |
+| **Supabase with database rules instead of my own server** | Database, sign-in and access in one hosted service. The rule "a user only sees rows with their own user id" is on every table **inside the database**, so it holds even if someone skips the app and sends requests to the database directly. That removed a whole server I'd otherwise have to build and secure. |
 | **The user reviews every AI estimate** | A photo can't show the oil in a pan or the exact size of a portion. The scan fills in a form; nothing is logged until the user confirms or corrects it. |
 | **Demo with no sign-up, plus a week of sample data** | Recruiters don't sign up for apps. Supabase can create a guest account without email, which follows the same database rules, so the demo can't see anyone else's data. An empty dashboard shows nothing, so a fictional week is added on first entry. |
-| **A failed load is never shown as "empty"** | "Nothing logged yet" after a network error looks like lost data, and a failed profile load used to look like a new user. Errors now get their own message with a Retry button. |
 
 ## Challenges & how I solved them
 
@@ -94,22 +93,16 @@ flowchart LR
 - *Diagnosis:* every `VITE_` setting is copied into the code that each visitor's browser downloads, so anyone could open the browser's developer tools and copy the key.
 - *Fix:* moved the AI call into a server function (`api/scan-meal.ts`) that checks the user is signed in before calling Gemini, **replaced the key with a new one**, and confirmed on the live site that the key no longer appears in the downloaded code and that the function refuses requests without a login. Photos are made smaller in the browser first, because the function accepts up to 4.5 MB.
 
-**2. "It works" isn't the same as "it fails safely"**
-- *Symptom:* a test with the internet cut off: the nutrition screen said "Nothing logged yet", the weekly summary stayed on "Loading…" forever, and a failed profile load sent a returning user to the setup screen, where saving would have **overwritten their real profile**.
-- *Diagnosis:* every failed load was only written to a hidden log that nobody sees on a phone, and the screen fell back to looking empty.
-- *Fix:* "empty" and "failed to load" are now separate, every screen shows an error message with Retry, and a failed profile load is no longer treated as "new user". The same round of testing found a negative workout (−500 kcal) that silently lowered the day's target, a carbs target calculated as if all calories came from carbs, and weekly averages that counted today's half-finished day. All fixed.
-
-**3. The database and the code disagreed**
-- *Symptom:* saving a profile or a favorite meal failed with unclear errors.
-- *Diagnosis:* the live database had changed since the code was written (some columns were renamed or changed meaning). Instead of guessing, I had the actual columns and access rules read straight from the live database.
-- *Fix:* updated the code to match the real database. Lesson: when the database is the source of truth, check it first.
+**2. Testing what happens when things go wrong**
+- *What happened:* in a test with the internet cut off, the app showed "Nothing logged yet" as if the data was gone, and a returning user was sent to the setup screen, where saving would have overwritten their real profile.
+- *Fix:* the app now tells "no data yet" apart from "couldn't load", and shows an error with a Retry button. The same round of testing also found a negative workout that lowered the day's target, and weekly averages that counted a half-finished day. All fixed.
 
 ## Results
 
 - **Live and installable** at the link above, updated automatically on every push to GitHub.
-- I used it for my own nutrition and training for about two weeks, then stopped once I no longer had a cut or bulk goal to track. The logging habit was tied to the goal, not to the app.
+- I used it daily for my own nutrition and training while working toward a cut.
 - **Security checked on the live database, not assumed:** signed in as a demo user, reading other users' data returns nothing on all 7 tables, and saving data under another user's id is refused.
-- **The security rules are tested automatically:** [`supabase/schema.sql`](supabase/schema.sql) is the full database structure, copied from the live project. `npm run test:rls` builds a temporary copy of the database on the computer and runs 12 checks as two different users (no reading, changing or deleting the other user's data; one sleep log per night; deleting a workout deletes its sets). To prove the checks really catch problems, the rules were removed from one table: 6 checks failed.
+- **The security rules are tested automatically:** 12 checks sign in as two different users and confirm neither can read, change or delete the other's data. To prove the checks work, the rules were removed from one table, and the checks caught it.
 - **The demo stays up:** the free Supabase plan pauses a database after a week with no use, which took the demo down once. A scheduled GitHub job now reads from it every 3 days ([`keep-database-awake.yml`](.github/workflows/keep-database-awake.yml)).
 
 ## How I built it
@@ -126,8 +119,7 @@ I built Forge with an **AI-assisted workflow: Claude wrote the code**, and my pa
 - **No automatic activity data.** Without Apple Health (native apps only), calories from a watch are typed in by hand.
 - **AI estimates are estimates.** Portion size and hidden fats are hard to see in a photo; that's why every scan goes through a review step.
 - **Demo users can use the AI scan.** It's limited by Gemini's free quota; a per-user daily limit is the next step if it gets abused.
-- **A few old, unused columns remain** in the database (e.g. `profiles.user_id`, `sleep_logs.sleep_hours`) from earlier designs; they're marked in `schema.sql`. Next: remove them.
-- **Only the database rules have automated tests.** The target and budget math (`macroCalculator.ts`) is next, then running all tests automatically on every push.
+- **Only the security rules have automated tests.** Next: tests for the calorie and protein calculations.
 
 ## Tech stack
 
