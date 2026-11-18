@@ -1,12 +1,12 @@
 # Supabase's free plan pauses a project after a week with no database activity,
-# which takes the live demo down. This runs a tiny read every 3 days so that
+# which takes the live demo down. This runs a tiny read twice a day so that
 # never happens. The read returns no rows (RLS hides every row from a request
 # with no signed-in user), but it still reaches the database, which is enough.
 name: Keep database awake
 
 on:
   schedule:
-    - cron: "0 6 */3 * *"
+    - cron: "0 6,18 * * *"
   workflow_dispatch:
 
 jobs:
